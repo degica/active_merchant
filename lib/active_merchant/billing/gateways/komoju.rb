@@ -35,6 +35,7 @@ module ActiveMerchant #:nodoc:
         params[:external_order_num] = options[:order_id] if options[:order_id]
         params[:tax] = options[:tax] if options[:tax]
         params[:fraud_details] = fraud_details(options) unless fraud_details(options).empty?
+        params[:metadata] = options[:metadata] if options[:metadata]
 
         commit("/payments", params)
       end
