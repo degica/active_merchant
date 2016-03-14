@@ -1,9 +1,7 @@
 rvm:
-  - 1.9.3
-script: "bundle exec rake test:units"
+- 2.1.7
+script: bundle exec rake test:units
 cache: bundler
 notifications:
-  hipchat:
-    rooms:
-      secure: gdprkPxgAfbKU4AJlCJ3R820Z6y+xOWAwt7+bT7DVsOSke3uMWOTzQ9bVKMb6n74R0cctq8mAYh28o5MJVxOiXNFNhHblhGdJlNxB9ZoDwLkQ6Kx/vDBGoLpqeBIA8EaD6FYCtoWBruZeu45TxR/ldYa22BjnmyNNL4acwegq/E=
-  slack: degica:5qSWYJuIKSySc5KqlxwIoNRd
+  slack:
+    secure: kQeANhtcKjBwtBbIrz9+ATyRzRsuL3uz6I0t+vs94LbBDKry3rOI253lj3EI9WaHdzTTd3FdbMIiLxm8BL+c1ANE/xDmrvEqU+jsXAMyLpuTvwqN+Ne7AfA+3tRCxPJrJC1Zje+nPyjueQOdQbO7sut19G4909x3STA/StAZNik=
