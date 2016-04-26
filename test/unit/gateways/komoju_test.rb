@@ -84,6 +84,17 @@ class KomojuTest < Test::Unit::TestCase
     assert response.test?
   end
 
+  def test_successful_credit_card_store
+    successful_response = successful_credit_card_store_response
+    @gateway.expects(:ssl_post).returns(JSON.generate(successful_response))
+
+    response = @gateway.store(@credit_card, @options)
+    assert_success response
+
+    assert_equal successful_response["id"], response.authorization
+    assert response.test?
+  end
+
   private
 
   def successful_credit_card_purchase_response
@@ -151,6 +162,20 @@ class KomojuTest < Test::Unit::TestCase
         }]
     }
   end
+
+  def successful_credit_card_store_response
+    {
+      "id" => "tok_71864f005c9799cc4259b0e3fe3082f9fdba0163115ed77743ee22e070d2cf65chy4ap7vkdlkqymh73afwr652",
+   "resource" => "token",
+   "created_at" => "2016-04-26T03:04:07Z",
+   "payment_details" =>
+      {"type"=>"credit_card",
+       "given_name" => "taro",
+       "family_name" => "yamada"
+      }
+    }
+  end
+
 
   def failed_purchase_response
     {
