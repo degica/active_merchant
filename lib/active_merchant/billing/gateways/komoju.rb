@@ -50,6 +50,11 @@ module ActiveMerchant #:nodoc:
         Response.new true, 'Success', {}, { test: test? }
       end
 
+      def store(payment, options = {})
+        params = { payment_details: payment_details(payment, options) }
+        commit("/tokens", params)
+      end
+
       private
 
       def payment_details(payment, options)
@@ -59,7 +64,7 @@ module ActiveMerchant #:nodoc:
                     payment
                   end
 
-        details[:email] = options[:email] if options[:email]
+        details[:email] = options[:email] if options[:email] && details.is_a?(Hash)
         details
       end
 
