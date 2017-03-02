@@ -39,6 +39,8 @@ module ActiveMerchant #:nodoc:
         post[:external_order_num] = options[:order_id] if options[:order_id]
         post[:tax] = options[:tax] if options[:tax]
         add_fraud_details(post, options)
+
+        commit("/payments", post)
       end
 
       def refund(amount, identification, options = {})
