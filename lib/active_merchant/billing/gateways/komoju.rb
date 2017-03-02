@@ -21,23 +21,26 @@ module ActiveMerchant #:nodoc:
 
       def initialize(options = {})
         requires!(options, :login)
-        @api_key = options[:login]
         super
       end
 
-      def purchase(money, payment, options = {})
-        params = {
-          :amount => amount(money),
-          :description => options[:description],
-          :payment_details => payment_details(payment, options),
-          :currency => options[:currency] || currency(money)
-        }
-        params[:external_order_num] = options[:order_id] if options[:order_id]
-        params[:tax] = options[:tax] if options[:tax]
-        params[:fraud_details] = fraud_details(options) unless fraud_details(options).empty?
-        params[:metadata] = options[:metadata] if options[:metadata]
+      def continue(uuid, payment_details)
+        details = {payment_details: payment_details}
+        commit("/payments/#{uuid}", details, :patch)
+      end
 
-        commit("/payments", params)
+      def purchase(money, payment, options = {})
+        post = {}
+        post[:amount] = amount(money)
+        post[:locale] = options[:locale] if options[:locale]
+        post[:description] = options[:description]
+        add_payment_details(post, payment, options)
+        post[:currency] = options[:currency] || default_currency
+        post[:external_order_num] = options[:order_id] if options[:order_id]
+        post[:tax] = options[:tax] if options[:tax]
+        add_fraud_details(post, options)
+
+        commit("/payments", post)
       end
 
       def refund(amount, identification, options = {})
@@ -51,42 +54,53 @@ module ActiveMerchant #:nodoc:
       end
 
       def store(payment, options = {})
-        params = { payment_details: payment_details(payment, options) }
-        commit("/tokens", params)
+        post = {}
+        add_payment_details(post, payment, options)
+
+        if options[:customer_profile]
+          post[:email] = options[:email]
+          commit("/customers", post)
+        else
+          commit("/tokens", post)
+        end
       end
 
       private
 
-      def payment_details(payment, options)
-        details = if payment.is_a?(CreditCard)
-                    credit_card_payment_details(payment, options)
-                  else
-                    payment
-                  end
+      def add_payment_details(post, payment, options)
+        case payment
+        when CreditCard
+          details = {}
 
-        details[:email] = options[:email] if options[:email] && details.is_a?(Hash)
-        details
+          details[:type] = 'credit_card'
+          details[:number] = payment.number
+          details[:month] = payment.month
+          details[:year] = payment.year
+          details[:verification_value] = payment.verification_value
+          details[:given_name] = payment.first_name
+          details[:family_name] = payment.last_name
+          details[:email] = options[:email] if options[:email]
+          post[:payment_details] = details
+        when String
+          if payment.match(/^tok_/)
+            post[:payment_details] = payment
+          else
+            post[:customer] = payment
+          end
+        else
+          post[:payment_details] = payment
+        end
       end
 
-      def fraud_details(options)
+      def add_fraud_details(post, options)
         details = {}
+
         details[:customer_ip] = options[:ip] if options[:ip]
         details[:customer_email] = options[:email] if options[:email]
         details[:browser_language] = options[:browser_language] if options[:browser_language]
         details[:browser_user_agent] = options[:browser_user_agent] if options[:browser_user_agent]
-        details
-      end
 
-      def credit_card_payment_details(card, options)
-        details = {}
-        details[:type] = 'credit_card'
-        details[:number] = card.number
-        details[:month] = card.month
-        details[:year] = card.year
-        details[:verification_value] = card.verification_value
-        details[:given_name] = card.first_name
-        details[:family_name] = card.last_name
-        details
+        post[:fraud_details] = details unless details.empty?
       end
 
       def api_request(path, data)
@@ -94,7 +108,12 @@ module ActiveMerchant #:nodoc:
         begin
           raw_response = ssl_post("#{url}#{path}", data, headers)
         rescue ResponseError => e
-          raw_response = e.response.body
+          raw_response = case e.response.code.to_i
+          when 504
+            {error: {code: "gateway_timeout", message: Spree.t(:payment_processing_failed)}}.to_json
+          else
+            e.response.body
+          end
         end
 
         JSON.parse(raw_response)
@@ -104,10 +123,14 @@ module ActiveMerchant #:nodoc:
         response = api_request(path, params.to_json)
         success = !response.key?("error")
         message = success ? "Transaction succeeded" : response["error"]["message"]
-        Response.new(success, message, response,
-                     :test => test?,
-                     :error_code => success ? nil : error_code(response["error"]["code"]),
-                     :authorization => success ? response["id"] : nil)
+        Response.new(
+          success,
+          message,
+          response,
+          :test => test?,
+          :error_code => success ? nil : error_code(response["error"]["code"]),
+          :authorization => (success ? response["id"] : nil)
+        )
       end
 
       def error_code(code)
@@ -120,7 +143,7 @@ module ActiveMerchant #:nodoc:
 
       def headers
         {
-          "Authorization" => "Basic " + Base64.encode64(@api_key.to_s + ":").strip,
+          "Authorization" => "Basic " + Base64.encode64(@options[:login].to_s + ":").strip,
           "Accept" => "application/json",
           "Content-Type" => "application/json",
           "User-Agent" => "Komoju/v1 ActiveMerchantBindings/#{ActiveMerchant::VERSION}"

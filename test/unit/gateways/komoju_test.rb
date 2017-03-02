@@ -56,6 +56,7 @@ class KomojuTest < Test::Unit::TestCase
 
   def test_failed_purchase
     raw_response = mock
+    raw_response.expects(:code)
     raw_response.expects(:body).returns(JSON.generate(failed_purchase_response))
     exception = ActiveMerchant::ResponseError.new(raw_response)
 
