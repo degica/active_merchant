@@ -68,6 +68,18 @@ class KomojuTest < Test::Unit::TestCase
     assert response.test?
   end
 
+  def test_timeout_failure
+    raw_response = mock
+    raw_response.expects(:code).returns(504)
+    exception = ActiveMerchant::ResponseError.new(raw_response)
+
+    @gateway.expects(:ssl_post).raises(exception)
+
+    response = @gateway.purchase(@amount, @credit_card, @options)
+    assert_failure response
+    assert_equal "gateway_timeout", response.error_code
+  end
+
   def test_successful_credit_card_refund
     total = 108
     refund_message = "Full Refund"
