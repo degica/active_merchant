@@ -110,7 +110,7 @@ module ActiveMerchant #:nodoc:
         rescue ResponseError => e
           raw_response = case e.response.code.to_i
           when 504
-            {error: {code: "gateway_timeout", message: Spree.t(:payment_processing_failed)}}.to_json
+            {error: {code: "gateway_timeout", message: I18n.t(:payment_processing_failed)}}.to_json
           else
             e.response.body
           end
