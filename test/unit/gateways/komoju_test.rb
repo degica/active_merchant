@@ -26,7 +26,10 @@ class KomojuTest < Test::Unit::TestCase
 
   def test_successful_credit_card_purchase
     successful_response = successful_credit_card_purchase_response
-    @gateway.expects(:ssl_post).returns(JSON.generate(successful_response))
+    @gateway.expects(:ssl_post).with { |url, data|
+      json = JSON.parse(data)
+      assert_equal @options[:email], json['payment_details']['email']
+    }.returns(JSON.generate(successful_response))
 
     response = @gateway.purchase(@amount, @credit_card, @options)
     assert_success response
