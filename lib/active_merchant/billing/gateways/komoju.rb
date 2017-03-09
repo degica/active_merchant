@@ -87,7 +87,9 @@ module ActiveMerchant #:nodoc:
           else
             post[:customer] = payment
           end
-        else
+        when Hash
+          details = payment
+          details[:email] = options[:email] if options[:email]
           post[:payment_details] = payment
         end
       end
