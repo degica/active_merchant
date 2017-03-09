@@ -28,7 +28,17 @@ class KomojuTest < Test::Unit::TestCase
     successful_response = successful_credit_card_purchase_response
     @gateway.expects(:ssl_post).with { |url, data|
       json = JSON.parse(data)
-      assert_equal @options[:email], json['payment_details']['email']
+      assert_equal 'credit_card',                  json['payment_details']['type']
+      assert_equal credit_card.number,             json['payment_details']['number']
+      assert_equal credit_card.month,              json['payment_details']['month']
+      assert_equal credit_card.year,               json['payment_details']['year']
+      assert_equal credit_card.verification_value, json['payment_details']['verification_value']
+      assert_equal credit_card.first_name,         json['payment_details']['given_name']
+      assert_equal credit_card.last_name,          json['payment_details']['family_name']
+      assert_equal @options[:email],               json['fraud_details']['customer_email']
+      assert_equal @options[:browser_language],    json['fraud_details']['browser_language']
+      assert_equal @options[:browser_user_agent],  json['fraud_details']['browser_user_agent']
+      assert_equal @options[:ip],                  json['fraud_details']['customer_ip']
     }.returns(JSON.generate(successful_response))
 
     response = @gateway.purchase(@amount, @credit_card, @options)
@@ -42,6 +52,7 @@ class KomojuTest < Test::Unit::TestCase
     successful_response = successful_konbini_purchase_response
     @gateway.expects(:ssl_post).with { |url, data|
       json = JSON.parse(data)
+      assert_equal 'konbini'    ,    json['payment_details']['type']
       assert_equal @options[:email], json['payment_details']['email']
     }.returns(JSON.generate(successful_response))
 
