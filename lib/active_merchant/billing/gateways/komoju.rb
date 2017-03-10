@@ -49,6 +49,10 @@ module ActiveMerchant #:nodoc:
         commit("/payments/#{identification}/refund", params)
       end
 
+      def void(identification, options = {})
+        commit("/payments/#{identification}/refund", options)
+      end
+
       def capture(*args)
         Response.new true, 'Success', {}, { test: test? }
       end
