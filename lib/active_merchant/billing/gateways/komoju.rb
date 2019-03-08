@@ -38,6 +38,8 @@ module ActiveMerchant #:nodoc:
         post[:currency] = options[:currency] || default_currency
         post[:external_order_num] = options[:order_id] if options[:order_id]
         post[:tax] = options[:tax] if options[:tax]
+        post[:return_url] = options[:return_url] if options[:return_url]
+        post[:cancel_url] = options[:cancel_url] if options[:cancel_url]
         add_fraud_details(post, options)
 
         commit("/payments", post)
